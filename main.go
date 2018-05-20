@@ -8,6 +8,7 @@ import (
 	"github.com/machinebox/sdk-go/facebox"
 	"fmt"
 	"bytes"
+	//"github.com/leprosus/golang-tts"
 
 
 )
@@ -15,11 +16,23 @@ import (
 var (
     blue          = color.RGBA{0, 0, 255, 0}
     faceAlgorithm = "haarcascade_frontalface_default.xml"
+		
 )
 
  
 func main() {
 	
+/*	polly := golang_tts.New("AKIAI5KHZ4W53L55OQGA", "niFon9xIBQe8VNlnFEhOZR0blygpWweLm/9QhQ7S")
+	
+	polly.Format(golang_tts.MP3)
+  polly.Voice(golang_tts.Nicole)
+	_, err := polly.Speech("hello janice")
+	
+	if err!=nil {
+		log.Fatalf("speech fails &v",err)
+	} */
+	
+
 	fbox := facebox.New("http://localhost:8080")
 	log.Println("got facebox")
 	
@@ -35,6 +48,7 @@ func main() {
 	 defer img.Close()
 	 
 	 // load classifier to recognize faces
+	 
 classifier := gocv.NewCascadeClassifier()
 
 defer classifier.Close()
@@ -76,25 +90,38 @@ faces, err := fbox.Check(bytes.NewReader(buf))
 
 
 if err != nil {
-    log.Println("unable to recognize face: %v", err)
+    log.Printf("unable to recognize face: %v", err)
 }
-
-log.Println("have faces %v",faces)
 
 var caption = "I don't know you"
 if len(faces) > 0 {
+	log.Printf("more than 0 faces here %v", len(faces))
     caption = fmt.Sprintf("I know you %s", faces[0].Name)
+	
 }
 
 			 // draw rectangle for the face
-			 size := gocv.GetTextSize("I don't know you", gocv.FontHersheyPlain, 3, 2)
+			 size := gocv.GetTextSize(caption, gocv.FontHersheyPlain, 3, 2)
 			 pt := image.Pt(r.Min.X+(r.Min.X/2)-(size.X/2), r.Min.Y-2)
 			 gocv.PutText(&img, caption, pt, gocv.FontHersheyPlain, 3, blue, 2)
 			 gocv.Rectangle(&img, r, blue, 3)
 
-			 // show the image in the window, and wait 100ms
+log.Println("got the rectangle")
+			 // show the image in the window
 			 window.IMShow(img)
-			 window.WaitKey(100)
+			  window.WaitKey(100)
+			 //
+			 
+			 //read the caption outloud here
+			 /*_, err = polly.Speech(caption)
+ 			
+ 			if err!=nil {
+ 				log.Printf("speech fails &v",err)
+ 			}
+			 log.Println("I have spoken") */
+			
+			 
+			 log.Println("I have waited")
 		}
 	}
 }
