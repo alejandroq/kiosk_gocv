@@ -17,8 +17,6 @@ docker run -p 8080:8080 -e "MB_KEY=$MB_KEY" machinebox/facebox
 
 import (
 	"bytes"
-	"fmt"
-	"image"
 	"image/color"
 	"log"
 	"net/http"
@@ -82,7 +80,7 @@ func kiosk() {
 
 	// load classifier to recognize faces
 
-	classifier := gocv.NewCascadeClassifier()
+	/** classifier := gocv.NewCascadeClassifier()
 
 	defer classifier.Close()
 	log.Println("classifer opened")
@@ -90,6 +88,7 @@ func kiosk() {
 		log.Printf("Error reading cascade file: %v\n", faceAlgorithm)
 		return
 	}
+	*/
 
 	// open display window
 	//window := gocv.NewWindow("find me")
@@ -103,58 +102,65 @@ func kiosk() {
 		}
 
 		log.Println("read  from webcam")
-		rects := classifier.DetectMultiScale(img)
-		log.Println("have rectangles")
-		for _, r := range rects {
-			// Save each found face into the file
+		//rects := classifier.DetectMultiScale(img)
+		//log.Println("have rectangles")
+		//for _, r := range rects {
+		// Save each found face into the file
 
-			imgFace := img.Region(r)
-			log.Println("got region")
-			defer imgFace.Close()
+		//imgFace := img.Region(r)
+		//log.Println("got region")
+		//defer imgFace.Close()
 
-			buf, err := gocv.IMEncode(".jpg", imgFace)
-			if err != nil {
-				log.Printf("unable to encode matrix: %v", err)
-				continue
-			}
-
-			faces, err := fbox.Check(bytes.NewReader(buf))
-
-			if err != nil {
-				log.Printf("unable to recognize face: %v", err)
-			}
-
-			var caption = "I don't know you"
-			if len(faces) > 0 {
-				log.Printf("more than 0 faces here %v", len(faces))
-				caption = fmt.Sprintf("I know you %s", faces[0].Name)
-
-			}
-
-			// draw rectangle for the face
-			size := gocv.GetTextSize(caption, gocv.FontHersheyPlain, 3, 2)
-			pt := image.Pt(r.Min.X+(r.Min.X/2)-(size.X/2), r.Min.Y-2)
-			gocv.PutText(&img, caption, pt, gocv.FontHersheyPlain, 3, blue, 2)
-			gocv.Rectangle(&img, r, blue, 3)
-
-			log.Println("got the rectangle")
-			// show the image in the window
-			//window.IMShow(img)
-			//window.WaitKey(100)
-			//
-
-			buf2, _ := gocv.IMEncode("*.jpg", img)
-			stream.UpdateJPEG(buf2)
-			//read the caption outloud here
-			/*_, err = polly.Speech(caption)
-
-			 if err!=nil {
-				 log.Printf("speech fails &v",err)
-			 }
-			 log.Println("I have spoken") */
-
-			log.Println("I have waited")
+		//buf, err := gocv.IMEncode(".jpg", imgFace)
+		buf, err := gocv.IMEncode(".jpg", img)
+		if err != nil {
+			log.Printf("unable to encode matrix: %v", err)
+			continue
 		}
+
+		faces, err := fbox.Check(bytes.NewReader(buf))
+
+		if err != nil {
+			log.Printf("unable to recognize face: %v", err)
+		}
+
+		if len(faces) > 0 {
+			log.Println("this photo is  %v", faces[0].Name)
+		}
+
+		/**var caption = "I don't know you"
+		if len(faces) > 0 {
+			log.Printf("more than 0 faces here %v", len(faces))
+			caption = fmt.Sprintf("I know you %s", faces[0].Name)
+
+		}
+
+		// draw rectangle for the face
+		size := gocv.GetTextSize(caption, gocv.FontHersheyPlain, 3, 2)
+		pt := image.Pt(r.Min.X+(r.Min.X/2)-(size.X/2), r.Min.Y-2)
+		gocv.PutText(&img, caption, pt, gocv.FontHersheyPlain, 3, blue, 2)
+		gocv.Rectangle(&img, r, blue, 3)
+
+		log.Println("got the rectangle")
+		// show the image in the window
+		//window.IMShow(img)
+		//window.WaitKey(100)
+		//
+
+		*/
+
+		//buf2, _ := gocv.IMEncode("*.jpg", img)
+		stream.UpdateJPEG(buf)
+		//read the caption outloud here
+		/*_, err = polly.Speech(caption)
+
+		 if err!=nil {
+			 log.Printf("speech fails &v",err)
+		 }
+		 log.Println("I have spoken") */
+
+		log.Println("I have waited")
+		//}
 
 	}
 }
