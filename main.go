@@ -145,7 +145,8 @@ func kiosk() {
 			//window.WaitKey(100)
 			//
 
-			stream.UpdateJPEG(buf)
+			buf2, _ := gocv.IMEncode("*.jpg", img)
+			stream.UpdateJPEG(buf2)
 			//read the caption outloud here
 			/*_, err = polly.Speech(caption)
 
