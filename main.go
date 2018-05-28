@@ -32,9 +32,7 @@ import (
 var (
 	blue          = color.RGBA{0, 0, 255, 0}
 	faceAlgorithm = "haarcascade_frontalface_default.xml"
-	//webcam        *gocv.VideoCapture
-	stream *mjpeg.Stream
-	//fbox          *facebox.Client
+	stream        *mjpeg.Stream
 )
 
 func main() {
@@ -61,7 +59,7 @@ func main() {
 	go kiosk()
 
 	// start http server
-	http.Handle("/", stream)
+	http.Handle("/camera", stream)
 
 	log.Fatal(http.ListenAndServe("localhost:8090", nil))
 
