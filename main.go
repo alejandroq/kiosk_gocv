@@ -17,10 +17,12 @@ docker run -p 8080:8080 -e "MB_KEY=$MB_KEY" machinebox/facebox
 
 import (
 	"bytes"
+	"encoding/json"
 	"image/color"
 	"log"
 	"net/http"
-	"time"
+
+	"github.com/gorilla/mux"
 
 	"github.com/machinebox/sdk-go/facebox"
 
@@ -34,6 +36,7 @@ var (
 	faceAlgorithm = "haarcascade_frontalface_default.xml"
 	stream        *mjpeg.Stream
 	fbox          *facebox.Client
+	c1            = make(chan bool)
 )
 
 func main() {
@@ -42,24 +45,58 @@ func main() {
 	// create the mjpeg stream
 	stream = mjpeg.NewStream()
 
+	router := mux.NewRouter()
+
 	fbox = facebox.New("http://localhost:8080")
 
 	go kiosk()
 
 	// start http server
-	http.Handle("/camera", stream)
+	router.Handle("/camera", stream)
+	log.Println("camera routed")
 
-	log.Fatal(http.ListenAndServe("localhost:8090", nil))
+	router.HandleFunc("/face", face)
+
+	log.Fatal(http.ListenAndServe("localhost:8090", router))
 
 }
 
-func face(img []byte) {
+/*
 
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+}
+*/
+
+type jsonface struct {
+	StudentName    string `json:studentname`
+	CounselorName  string `json:counselorname`
+	CounselorImage string `json:counselorimage`
+}
+
+func face(w http.ResponseWriter, r *http.Request) {
+
+	log.Println("in face ")
+	webcam, err := gocv.VideoCaptureDevice(0)
+	if err != nil {
+		log.Fatalln("can't find camera")
+	}
+	log.Println("in face ")
+	// prepare image matrix
+	img := gocv.NewMat()
+	defer img.Close()
+
+	if ok := webcam.Read(&img); !ok || img.Empty() {
+		log.Print("cannot read webcam")
+		return
+	}
+
+	buf, err := gocv.IMEncode(".jpg", img)
 	if fbox == nil {
 		log.Fatal("no fbox :-(")
 	}
 
-	faces, err := fbox.Check(bytes.NewReader(img))
+	faces, err := fbox.Check(bytes.NewReader(buf))
 
 	if err != nil {
 		log.Printf("unable to recognize face: %v", err)
@@ -67,9 +104,39 @@ func face(img []byte) {
 
 	if len(faces) > 0 {
 		log.Printf("this photo is  %v ", faces[0].Name)
+
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	faceName := ""
+	image := ""
+	counselorName := ""
+
+	if len(faces) == 0 {
+		faceName = "Who are you?"
+		image = "none.jpg"
+		counselorName = "Nope"
+	} else {
+		faceName = faces[0].Name
+		if string(faceName[0]) < "k" {
+			image = "wink.jpg"
+			counselorName = "Wink"
+		} else {
+			image = "lizzie.jpg"
+			counselorName = "Lizzie"
+		}
+	}
+
+	faceJSON := jsonface{StudentName: faceName, CounselorImage: image, CounselorName: counselorName}
+
+	log.Println("faceJSON has  ", faceJSON)
+	jData, err := json.Marshal(faceJSON)
+	if err != nil {
+		log.Fatalln("problem marshalling json", err)
+		return
+	}
+	log.Println("face json is:", string(jData))
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jData)
 
 }
 
@@ -77,9 +144,8 @@ func kiosk() {
 
 	webcam, err := gocv.VideoCaptureDevice(0)
 	if err != nil {
-		log.Fatalf("error opening web cam: %v", err)
+		log.Fatalln("can't find camera")
 	}
-	defer webcam.Close()
 
 	// prepare image matrix
 	img := gocv.NewMat()
@@ -92,12 +158,11 @@ func kiosk() {
 		}
 
 		buf, err := gocv.IMEncode(".jpg", img)
+
 		if err != nil {
 			log.Printf("unable to encode matrix: %v", err)
 			continue
 		}
-
-		go face(buf)
 
 		stream.UpdateJPEG(buf)
 
