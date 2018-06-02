@@ -21,6 +21,7 @@ import (
 	"image/color"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -111,13 +112,13 @@ func face(w http.ResponseWriter, r *http.Request) {
 	image := ""
 	counselorName := ""
 
-	if len(faces) == 0 {
+	if len(faces[0].Name) == 0 {
 		faceName = "Who are you?"
 		image = "none.jpg"
 		counselorName = "Nope"
 	} else {
 		faceName = faces[0].Name
-		if string(faceName[0]) < "k" {
+		if strings.ToLower(string(faceName[0])) < "k" {
 			image = "wink.jpg"
 			counselorName = "Wink"
 		} else {
