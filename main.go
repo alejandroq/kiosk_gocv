@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"image/color"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -168,14 +168,12 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Error synthesizing text " + http.StatusText(500)))
 	}
 
-	data, err := ioutil.ReadAll(output.AudioStream)
-	if err != nil {
+	if _, err := io.Copy(w, output.AudioStream); err != nil {
 		log.Println("Error reading mp3: ")
 		log.Print(err.Error())
 		w.WriteHeader(500)
 		w.Write([]byte("Error reading mp3 " + http.StatusText(500)))
 	}
-	w.Write(data)
 }
 
 func kiosk() {
