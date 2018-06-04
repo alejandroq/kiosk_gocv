@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"image/color"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -27,9 +28,11 @@ import (
 
 	"github.com/machinebox/sdk-go/facebox"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/polly"
 	"github.com/hybridgroup/mjpeg"
 	"gocv.io/x/gocv"
-	//"github.com/leprosus/golang-tts"
 )
 
 var (
@@ -57,6 +60,7 @@ func main() {
 	log.Println("camera routed")
 
 	router.HandleFunc("/face", face)
+	router.HandleFunc("/audio/name/{name}", audioGreeting)
 
 	log.Fatal(http.ListenAndServe("localhost:8090", router))
 
@@ -140,6 +144,36 @@ func face(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jData)
 
+}
+
+func audioGreeting(w http.ResponseWriter, r *http.Request) {
+
+	name := mux.Vars(r)["name"]
+	log.Println("Generating text-to-speech for the name " + name)
+
+	// Initialize a session that the SDK uses to load credentials from the shared credentials file. (~/.aws/credentials).
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	pollyService := polly.New(sess)
+	textToSpeak := "hello " + name
+	input := &polly.SynthesizeSpeechInput{OutputFormat: aws.String("mp3"), Text: aws.String(textToSpeak), VoiceId: aws.String("Joanna")}
+
+	output, err := pollyService.SynthesizeSpeech(input)
+	if err != nil {
+		log.Println("Error calling SynthesizeSpeech: ")
+		log.Print(err.Error())
+		w.WriteHeader(500)
+		w.Write([]byte("Error synthesizing text " + http.StatusText(500)))
+	}
+
+	if _, err := io.Copy(w, output.AudioStream); err != nil {
+		log.Println("Error reading mp3: ")
+		log.Print(err.Error())
+		w.WriteHeader(500)
+		w.Write([]byte("Error reading mp3 " + http.StatusText(500)))
+	}
 }
 
 func kiosk() {
