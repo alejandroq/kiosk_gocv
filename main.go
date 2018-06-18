@@ -158,7 +158,7 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 
 	pollyService := polly.New(sess)
 	textToSpeak := "hello " + name
-	input := &polly.SynthesizeSpeechInput{OutputFormat: aws.String("mp3"), Text: aws.String(textToSpeak), VoiceId: aws.String("Joanna")}
+	input := &polly.SynthesizeSpeechInput{OutputFormat: aws.String("mp3"), Text: aws.String(textToSpeak), VoiceId: aws.String("Nicole")}
 
 	output, err := pollyService.SynthesizeSpeech(input)
 	if err != nil {
