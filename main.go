@@ -66,12 +66,34 @@ func main() {
 
 }
 
-/*
+func kiosk() {
 
-func handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+	webcam, err := gocv.VideoCaptureDevice(0)
+	if err != nil {
+		log.Fatalln("can't find camera")
+	}
+
+	// prepare image matrix
+	img := gocv.NewMat()
+	defer img.Close()
+
+	for {
+		if ok := webcam.Read(&img); !ok || img.Empty() {
+			log.Print("cannot read webcam")
+			continue
+		}
+
+		buf, err := gocv.IMEncode(".jpg", img)
+
+		if err != nil {
+			log.Printf("unable to encode matrix: %v", err)
+			continue
+		}
+
+		stream.UpdateJPEG(buf)
+
+	}
 }
-*/
 
 type jsonface struct {
 	StudentName    string `json:studentname`
@@ -81,12 +103,11 @@ type jsonface struct {
 
 func face(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("in face ")
 	webcam, err := gocv.VideoCaptureDevice(0)
 	if err != nil {
 		log.Fatalln("can't find camera")
 	}
-	log.Println("in face ")
+
 	// prepare image matrix
 	img := gocv.NewMat()
 	defer img.Close()
@@ -157,7 +178,7 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 	}))
 
 	pollyService := polly.New(sess)
-	textToSpeak := "hello " + name
+	textToSpeak := "welcome " + name
 	input := &polly.SynthesizeSpeechInput{OutputFormat: aws.String("mp3"), Text: aws.String(textToSpeak), VoiceId: aws.String("Nicole")}
 
 	output, err := pollyService.SynthesizeSpeech(input)
@@ -173,34 +194,5 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 		log.Print(err.Error())
 		w.WriteHeader(500)
 		w.Write([]byte("Error reading mp3 " + http.StatusText(500)))
-	}
-}
-
-func kiosk() {
-
-	webcam, err := gocv.VideoCaptureDevice(0)
-	if err != nil {
-		log.Fatalln("can't find camera")
-	}
-
-	// prepare image matrix
-	img := gocv.NewMat()
-	defer img.Close()
-
-	for {
-		if ok := webcam.Read(&img); !ok || img.Empty() {
-			log.Print("cannot read webcam")
-			continue
-		}
-
-		buf, err := gocv.IMEncode(".jpg", img)
-
-		if err != nil {
-			log.Printf("unable to encode matrix: %v", err)
-			continue
-		}
-
-		stream.UpdateJPEG(buf)
-
 	}
 }
