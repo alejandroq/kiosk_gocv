@@ -60,7 +60,7 @@ func main() {
 	log.Println("camera routed")
 
 	router.HandleFunc("/face", face)
-	router.HandleFunc("/audio/name/{name}", audioGreeting)
+	router.HandleFunc("/audio/student/{student}/counselor/{counselor}", audioGreeting)
 
 	log.Fatal(http.ListenAndServe("localhost:8090", router))
 
@@ -169,8 +169,8 @@ func face(w http.ResponseWriter, r *http.Request) {
 
 func audioGreeting(w http.ResponseWriter, r *http.Request) {
 
-	name := mux.Vars(r)["name"]
-	log.Println("Generating text-to-speech for the name " + name)
+	vars := mux.Vars(r)
+	log.Println("Generating text-to-speech for input", vars)
 
 	// Initialize a session that the SDK uses to load credentials from the shared credentials file. (~/.aws/credentials).
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -178,7 +178,7 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 	}))
 
 	pollyService := polly.New(sess)
-	textToSpeak := "welcome " + name
+	textToSpeak := "welcome " + vars["student"] + "! your counselor, " + vars["counselor"] + ", will be with you shortly!"
 	input := &polly.SynthesizeSpeechInput{OutputFormat: aws.String("mp3"), Text: aws.String(textToSpeak), VoiceId: aws.String("Nicole")}
 
 	output, err := pollyService.SynthesizeSpeech(input)
@@ -188,6 +188,10 @@ func audioGreeting(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte("Error synthesizing text " + http.StatusText(500)))
 	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
 
 	if _, err := io.Copy(w, output.AudioStream); err != nil {
 		log.Println("Error reading mp3: ")
